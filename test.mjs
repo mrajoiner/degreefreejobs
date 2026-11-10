@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {qualify,geography,degreePolicy} from './sources.mjs';
+const src=['gh','example','Example'];
+const base={id:1,title:'Customer Support',location:{name:'Remote, United States'},absolute_url:'https://example.com/jobs/1',content:'<p>Work from home. High school diploma or GED required. Full-time.</p>'};
+assert.ok(qualify(base,src));
+assert.equal(qualify({...base,content:base.content+'<p>Bachelor degree required.</p>'},src),null);
+assert.equal(qualify({...base,content:'Work from home. Strong communication skills.'},src),null);
+assert.equal(qualify({...base,location:{name:'Hybrid, Texas'}},src),null);
+assert.equal(qualify({...base,location:{name:'Remote, Canada'}},src),null);
+assert.ok(degreePolicy('Bachelor degree or equivalent work experience.'));
+assert.ok(degreePolicy('Bachelor degree preferred.'));
+assert.equal(geography('Remote OR, WA & ID','').states.length,3);
+assert.equal(geography('United States Remote','').states.length,48);
+assert.equal(qualify({...base,title:'Part-time Customer Support'},src).term,'Part-time');
+console.log('Passed eligibility, geography, and schedule checks.');
