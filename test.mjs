@@ -12,4 +12,5 @@ assert.ok(degreePolicy('Bachelor degree preferred.'));
 assert.equal(geography('Remote OR, WA & ID','').states.length,3);
 assert.equal(geography('United States Remote','').states.length,48);
 assert.equal(qualify({...base,title:'Part-time Customer Support'},src).term,'Part-time');
+assert.equal(qualify({...base,title:'Provider Contracting Associate',content:'Work from home. High school diploma required.'},src).term,'Schedule not listed');
 console.log('Passed eligibility, geography, and schedule checks.');
