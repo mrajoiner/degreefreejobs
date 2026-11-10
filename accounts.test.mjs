@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {accountRoutes,cleanProfile} from './accounts.mjs';
+const origin='https://example.test';const headers={'oai-authenticated-user-id':'alice','oai-authenticated-user-email':'alice@example.test'};const user={id:'alice',email:'alice@example.test',role:'user',status:'active',profile:'{}',created_at:'2026-11-09',updated_at:'2026-11-09'};
+const env={ADMIN_EMAIL:'owner@example.test',BUCKET:{},DB:{prepare(sql){return{bind(...args){return{async first(){return args[0]==='alice'?user:null;},async all(){return{results:[]}},async run(){return{success:true}}}}}}}};
+async function call(path,options={}){return accountRoutes(new Request(origin+path,options),env);}
+assert.equal((await call('/api/account/session')).status,401);
+assert.equal((await call('/api/admin/users',{headers})).status,403);
+assert.equal((await call('/api/admin/users/alice/resume',{headers})).status,403);
+assert.equal((await call('/api/account',{method:'DELETE',headers})).status,403);
+assert.equal((await call('/api/account',{method:'DELETE',headers:{...headers,origin:'https://evil.test'}})).status,403);
+assert.equal((await call('/api/account',{method:'POST',headers:{...headers,origin},body:JSON.stringify({email:'bob@example.test'})})).status,400);
+assert.equal((await call('/api/account',{method:'POST',headers:{...headers,origin},body:'x'.repeat(9000)})).status,413);
+assert.equal((await call('/api/account/session',{headers})).status,200);
+assert.equal((await (await call('/api/account',{headers})).json()).account.email,'alice@example.test');
+assert.equal((await call('/api/account/bob',{headers})).status,405);
+user.status='suspended';assert.equal((await call('/api/account/session',{headers})).status,403);user.status='active';
+user.role='admin';assert.equal((await call('/api/admin/users',{headers})).status,200);
+assert.equal((await call('/api/admin/users/alice',{method:'PATCH',headers:{...headers,origin},body:JSON.stringify({role:'user',status:'suspended'})})).status,400);
+assert.equal(cleanProfile({name:'A',role:'admin',address:'x'.repeat(400)}).address.length,300);
+assert.equal(cleanProfile({role:'admin'}).role,undefined);
+console.log('Passed account authentication, admin authorization, suspension, ownership, origin, payload bounds, and profile validation checks.');
